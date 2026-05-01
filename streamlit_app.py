@@ -344,23 +344,30 @@ def render_eda(df):
 
     with tab_hist:
         st.subheader("Feature Distributions")
-        feature = st.selectbox("Select Feature to Visualize", NUMERIC_COLS + CATEGORICAL_COLS, key="hist_feature")
+        st.write("Understand how your data is distributed across different categories and ranges.")
+
+        col1, col2 = st.columns([1, 2])
+        feature = col1.selectbox("Select Feature:", NUMERIC_COLS + CATEGORICAL_COLS, key="hist_feature")
 
         if feature in NUMERIC_COLS:
-            bins = st.slider("Number of Bins", 10, 60, 30, key="hist_bins")
+            bins = col2.slider("Number of Bins:", 10, 60, 30, key="hist_bins")
+
+        st.divider()
+
+        if feature in NUMERIC_COLS:
             fig, ax = create_fig("wide")
             sns.histplot(df_plot[feature], kde=True, bins=bins, ax=ax, color="#6baed6")
             ax.set_title(f"Distribution of {feature.replace('_', ' ')}")
             show_fig(fig)
         else:
-            col1, col2 = st.columns(2)
-            with col1:
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
                 fig1, ax1 = create_fig("square")
                 sns.countplot(x=feature, data=df_plot, ax=ax1, color="#4292c6")
                 ax1.set_title(f"Count of {feature.replace('_', ' ')}")
                 plt.xticks(rotation=45)
                 show_fig(fig1)
-            with col2:
+            with col_p2:
                 fig2, ax2 = create_fig("square")
                 rate_df = df_plot.groupby(feature)[TARGET_COL].mean().reset_index()
                 sns.barplot(data=rate_df, x=feature, y=TARGET_COL, ax=ax2, color="#084594")
@@ -371,19 +378,28 @@ def render_eda(df):
 
     with tab_box:
         st.subheader("Distribution Analysis by Target")
-        box_feature = st.selectbox("Select Numeric Feature for Boxplot", NUMERIC_COLS, index=NUMERIC_COLS.index("Weight_in_gms"), key="box_feature")
+        st.write("Compare how numeric features vary between packages that arrived on time vs. delayed.")
+
+        col1, _ = st.columns([1, 2])
+        box_feature = col1.selectbox("Select Numeric Feature:", NUMERIC_COLS, index=NUMERIC_COLS.index("Weight_in_gms"), key="box_feature")
+
+        st.divider()
 
         fig, ax = create_fig("wide")
         sns.boxplot(x="Delay_Status", y=box_feature, data=df_plot, ax=ax, palette=["#9ecae1", "#084594"])
         ax.set_title(f"{box_feature.replace('_', ' ')} distribution by Delay Status")
         show_fig(fig)
-        st.caption("Boxplots help identify how the distribution of numeric features differs for delayed vs. on-time shipments.")
+        st.caption("Boxplots help identify outliers and differences in medians between the two groups.")
 
     with tab_scatter:
         st.subheader("Relationship Analysis")
-        col1, col2 = st.columns(2)
-        x_axis = col1.selectbox("X Axis", NUMERIC_COLS, index=NUMERIC_COLS.index("Weight_in_gms"), key="scat_x")
-        y_axis = col2.selectbox("Y Axis", NUMERIC_COLS, index=NUMERIC_COLS.index("Cost_of_the_Product"), key="scat_y")
+        st.write("Explore correlations between two numeric features, colored by whether they were delayed or on time.")
+
+        col1, col2, _ = st.columns([1, 1, 1])
+        x_axis = col1.selectbox("X Axis:", NUMERIC_COLS, index=NUMERIC_COLS.index("Weight_in_gms"), key="scat_x")
+        y_axis = col2.selectbox("Y Axis:", NUMERIC_COLS, index=NUMERIC_COLS.index("Cost_of_the_Product"), key="scat_y")
+
+        st.divider()
 
         fig, ax = create_fig("wide")
         sns.scatterplot(
@@ -392,16 +408,20 @@ def render_eda(df):
         )
         ax.set_title(f"{x_axis.replace('_', ' ')} vs {y_axis.replace('_', ' ')}")
         show_fig(fig)
-        st.caption("Scatterplots help visualize correlations and clusters between numeric features. (Sample of 5,000 used)")
+        st.caption("Showing a sample of up to 5,000 records for performance.")
 
     with tab_heat:
         st.subheader("Global Correlation Overview")
+        st.write("A bird's-eye view of how all numeric variables relate to each other and the target.")
+
+        st.divider()
+
         corr = df_plot[NUMERIC_COLS + [TARGET_COL]].corr()
         fig, ax = create_fig("wide")
         sns.heatmap(corr, annot=True, fmt=".2f", cmap="Blues", ax=ax)
         ax.set_title("Numeric Feature Correlation Matrix")
         show_fig(fig)
-        st.caption("Heatmap shows the Pearson correlation coefficient between all numeric features and the target.")
+        st.caption("Values closer to 1 or -1 indicate strong positive or negative correlations, respectively.")
 
 
 
@@ -431,14 +451,11 @@ def render_training():
     metrics = load_metrics()
 
     if MODEL_PATH.exists() and metrics:
-        st.success("Model is trained and ready.")
-
-        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         col_m1.metric("Accuracy", f"{metrics.get('accuracy', 0):.2%}")
         col_m2.metric("Precision", f"{metrics.get('precision', 0):.2%}")
         col_m3.metric("Recall", f"{metrics.get('recall', 0):.2%}")
         col_m4.metric("F1-Score", f"{metrics.get('f1_score', 0):.2%}")
-        col_m5.metric("CV F1-Score", f"{metrics.get('cv_f1_mean', 0):.2%}", f"± {metrics.get('cv_f1_std', 0):.2%}")
 
         st.caption("F1-Score measures the balance between precision and recall, crucial here due to dataset noise.")
 
@@ -515,7 +532,7 @@ def render_result():
 
 
 # app entry point
-st.set_page_config(page_title="LogiRisk", page_icon="📦", layout="wide")
+st.set_page_config(page_title="LogiRisk: Delivery Delay Risk Prediction System", page_icon="📦", layout="wide")
 
 st.markdown(
     """
@@ -541,30 +558,32 @@ footer {visibility: hidden;}
 pages = [
     "Home",
     "Dataset",
-    "EDA",
+    "Exploratory Data Analysis",
     "Preprocessing",
-    "Training",
+    "Model Training",
     "Prediction & Result",
 ]
 
 df = load_dataset()
 
 with st.sidebar:
-    st.markdown("## Navigation")
+    st.divider()
+
+    st.markdown("### Navigation")
     page = st.radio("Pages", pages, key="nav_page", label_visibility="collapsed")
-    if df is None:
-        st.warning("Dataset not loaded")
+
+    st.divider()
 
 if page == "Home":
     render_home()
 elif page == "Dataset":
     render_dataset(df)
     render_dashboard(df)
-elif page == "EDA":
+elif page == "Exploratory Data Analysis":
     render_eda(df)
 elif page == "Preprocessing":
     render_preprocessing()
-elif page == "Training":
+elif page == "Model Training":
     render_training()
 elif page == "Prediction & Result":
     render_prediction(df)
