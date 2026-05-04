@@ -1,0 +1,139 @@
+{
+    "model_name": "RandomForest",
+    "accuracy": 0.6016,
+    "precision": 0.7083,
+    "recall": 0.3447,
+    "f1_score": 0.4638,
+    "cv_f1_mean": 0.4382,
+    "cv_f1_std": 0.0179,
+    "preprocess_params": {
+        "mode_name": "Robust",
+        "outlier_method": "Remove",
+        "fe_toggles": [
+            "Weight/Cost Ratio",
+            "High Discount",
+            "Engagement Score",
+            "Delivery Urgency",
+            "Care Intensity"
+        ],
+        "imbalance": "Undersampling",
+        "drop_duplicates": true,
+        "num_fill": "median",
+        "cat_fill": "mode",
+        "cat_fill_value": "Unknown"
+    },
+    "train_settings": {
+        "test_size": 0.2,
+        "cv_folds": 5
+    },
+    "confusion_matrix": {
+        "true_negatives": 678,
+        "false_positives": 112,
+        "false_negatives": 517,
+        "true_positives": 272
+    },
+    "feature_importance": [
+        {
+            "feature": "Weight_in_gms",
+            "importance": 0.210315294440227
+        },
+        {
+            "feature": "Weight_Cost_Ratio",
+            "importance": 0.16379364138700384
+        },
+        {
+            "feature": "Discount_offered",
+            "importance": 0.12526758255668777
+        },
+        {
+            "feature": "Is_High_Discount",
+            "importance": 0.09413951238642317
+        },
+        {
+            "feature": "Cost_of_the_Product",
+            "importance": 0.08580842505902289
+        },
+        {
+            "feature": "Urgency_Score",
+            "importance": 0.06446615672884526
+        },
+        {
+            "feature": "Prior_purchases",
+            "importance": 0.050517655317661184
+        },
+        {
+            "feature": "Engagement_Score",
+            "importance": 0.03563971105653607
+        },
+        {
+            "feature": "Calls_per_Purchase",
+            "importance": 0.03513041729909291
+        },
+        {
+            "feature": "Customer_care_calls",
+            "importance": 0.029700660767070664
+        },
+        {
+            "feature": "Customer_rating",
+            "importance": 0.019256801559249977
+        },
+        {
+            "feature": "Mode_of_Shipment_Ship",
+            "importance": 0.007594241488328956
+        },
+        {
+            "feature": "Product_importance_medium",
+            "importance": 0.007392256798439095
+        },
+        {
+            "feature": "Warehouse_block_F",
+            "importance": 0.007152565901058146
+        },
+        {
+            "feature": "Product_importance_high",
+            "importance": 0.007148248926128171
+        },
+        {
+            "feature": "Gender_F",
+            "importance": 0.007002717268957126
+        },
+        {
+            "feature": "Mode_of_Shipment_Road",
+            "importance": 0.006789960069097695
+        },
+        {
+            "feature": "Mode_of_Shipment_Flight",
+            "importance": 0.006557868202359721
+        },
+        {
+            "feature": "Gender_M",
+            "importance": 0.006527920059556587
+        },
+        {
+            "feature": "Product_importance_low",
+            "importance": 0.006287744978771673
+        },
+        {
+            "feature": "Warehouse_block_D",
+            "importance": 0.006130903686688909
+        },
+        {
+            "feature": "Warehouse_block_B",
+            "importance": 0.0060275007202648945
+        },
+        {
+            "feature": "Warehouse_block_A",
+            "importance": 0.005859027889438402
+        },
+        {
+            "feature": "Warehouse_block_C",
+            "importance": 0.005493185453090017
+        }
+    ],
+    "dataset_info": {
+        "total_rows": 7971,
+        "train_size": 6315,
+        "val_size": 1579,
+        "n_features": 24
+    }
+}

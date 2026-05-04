@@ -1,0 +1,21 @@
+[
+    "Warehouse_block_A",
+    "Warehouse_block_B",
+    "Warehouse_block_C",
+    "Warehouse_block_D",
+    "Warehouse_block_F",
+    "Mode_of_Shipment_Flight",
+    "Mode_of_Shipment_Road",
+    "Mode_of_Shipment_Ship",
+    "Product_importance_high",
+    "Product_importance_low",
+    "Product_importance_medium",
+    "Gender_F",
+    "Gender_M",
+    "Customer_care_calls",
+    "Customer_rating",
+    "Cost_of_the_Product",
+    "Prior_purchases",
+    "Discount_offered",
+    "Weight_in_gms"
+]
