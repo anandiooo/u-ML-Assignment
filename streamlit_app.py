@@ -1,4 +1,3 @@
-# imports
 import streamlit as st
 import sys
 import json
@@ -8,14 +7,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import time
 
-# page setup
 st.set_page_config(
     page_title="LogiRisk · Delivery Intelligence",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# global css
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
@@ -165,7 +162,6 @@ div.stButton > button:not([kind="primary"]) {
 </style>
 """, unsafe_allow_html=True)
 
-# paths and columns
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 from predict import predict_risk
 from train import train_model, DEFAULT_PARAMS
@@ -179,7 +175,6 @@ CATEGORICAL_COLS = ["Warehouse_block", "Mode_of_Shipment", "Product_importance",
 STATUS_COLORS = {"On Time": "#615fff", "Delayed": "#e2e8f0"}
 MODEL_OPTIONS = list(DEFAULT_PARAMS.keys())
 
-# preprocessing presets
 PREPROCESSING_MODES = {
     "Balanced": {
         "outlier_method": "Clip (IQR)",
@@ -218,7 +213,6 @@ DEFAULT_PREPROCESSING = {
     "cat_fill_value": "Unknown",
 }
 
-# init state
 for key, val in {
     "trained_models": {},
     "last_trained_model": None,
@@ -229,32 +223,27 @@ for key, val in {
     if key not in st.session_state:
         st.session_state[key] = val
 
-# dataset loader
 @st.cache_data
 def load_dataset():
     if not DATA_PATH.exists():
         return None
     return pd.read_csv(DATA_PATH)
 
-# metrics loader
 @st.cache_data
 def load_metrics(model_name):
     slug = model_name.lower().replace(" ", "_")
     p = Path(f"models/metrics_{slug}.json")
     return json.load(open(p)) if p.exists() else None
 
-# add label
 def add_delay_status(df):
     out = df.copy()
     out["Delay_Status"] = out[TARGET_COL].map({0: "On Time", 1: "Delayed"})
     return out
 
-# info box
 def ibox(text, kind="info"):
     cls = {"info": "interp-box", "warn": "warn-box", "ok": "ok-box", "risk": "risk-box"}[kind]
     st.markdown(f'<div class="{cls}">{text}</div>', unsafe_allow_html=True)
 
-# page header
 def page_header(title: str, subtitle: str = ""):
     st.markdown(
         f'<div class="page-header">'
@@ -264,7 +253,6 @@ def page_header(title: str, subtitle: str = ""):
         unsafe_allow_html=True,
     )
 
-# home page
 def render_home():
     page_header("LogiRisk", "AI-powered delivery delay intelligence for logistics teams")
 
@@ -310,7 +298,6 @@ def render_home():
             unsafe_allow_html=True,
         )
 
-# eda page
 def render_eda():
     page_header("Explore Data", "Understand patterns before building a model")
 
@@ -325,12 +312,10 @@ def render_eda():
         "Raw Data", "Distributions", "Target Analysis", "Scatter", "Correlations"
     ])
 
-    # raw data
     with tab_raw:
         st.caption(f"Showing all {len(df):,} records · {df.shape[1]} columns")
         st.dataframe(df, width="stretch", height=420)
 
-    # distribution
     with tab_dist:
         col_ctrl, _ = st.columns([2, 3])
         feature = col_ctrl.selectbox("Feature to inspect:", NUMERIC_COLS + CATEGORICAL_COLS, key="hist_feature")
@@ -369,7 +354,6 @@ def render_eda():
                 f"<em>{feature.replace('_', ' ')}</em> categories. Taller dark bars indicate higher-risk segments."
             )
 
-    # target analysis
     with tab_target:
         col_ctrl2, _ = st.columns([2, 3])
         box_feature = col_ctrl2.selectbox("Numeric feature:", NUMERIC_COLS, key="box_feature")
@@ -392,7 +376,6 @@ def render_eda():
             f"{'A larger gap means this feature is a stronger predictor.' if delta > 1 else 'The gap is small — this feature alone may not strongly predict delays.'}"
         )
 
-    # scatter
     with tab_scatter:
         c1, c2 = st.columns(2)
         x_axis = c1.selectbox("X axis:", NUMERIC_COLS, index=NUMERIC_COLS.index("Weight_in_gms"), key="sc_x")
@@ -413,7 +396,6 @@ def render_eda():
             "limited separation. Distinct clusters indicate strong joint predictive power."
         )
 
-    # correlation
     with tab_corr:
         corr = df_plot[NUMERIC_COLS + [TARGET_COL]].corr()
         fig_heat = px.imshow(
@@ -433,7 +415,6 @@ def render_eda():
             "Values above 0.3 are generally considered meaningful in logistics contexts."
         )
 
-# preprocess page
 def render_preprocess():
     page_header("Preprocessing", "Configure and verify the data pipeline")
 
@@ -442,11 +423,10 @@ def render_preprocess():
         st.error("Dataset not found.")
         return
 
-    # config
     st.markdown('<div class="section-heading">Pipeline Configuration</div>', unsafe_allow_html=True)
-    c_preset, c_controls = st.columns([1, 2], gap="large")
+    c1, c2, c3 = st.columns(3)
 
-    with c_preset:
+    with c1:
         mode = st.selectbox(
             "Mode Preset", list(PREPROCESSING_MODES.keys()),
             index=list(PREPROCESSING_MODES.keys()).index(st.session_state["preprocess"]["mode_name"]),
@@ -457,25 +437,22 @@ def render_preprocess():
             st.session_state["preprocess"]["mode_name"] = mode
             st.rerun()
 
-        st.info(f"**{mode}** mode handles missing values and duplicates automatically.")
+    with c2:
+        outlier_method = st.selectbox(
+            "Outlier Handling", ["None", "Clip (IQR)", "Remove"],
+            index=["None", "Clip (IQR)", "Remove"].index(st.session_state["preprocess"]["outlier_method"]),
+        )
+        imb_strategy = st.selectbox(
+            "Imbalance Strategy", ["None", "Undersampling"],
+            index=["None", "Undersampling"].index(st.session_state["preprocess"]["imbalance"]),
+        )
 
-    with c_controls:
-        cc1, cc2 = st.columns(2)
-        with cc1:
-            outlier_method = st.selectbox(
-                "Outlier Handling", ["None", "Clip (IQR)", "Remove"],
-                index=["None", "Clip (IQR)", "Remove"].index(st.session_state["preprocess"]["outlier_method"]),
-            )
-            imb_strategy = st.selectbox(
-                "Imbalance Strategy", ["None", "Undersampling"],
-                index=["None", "Undersampling"].index(st.session_state["preprocess"]["imbalance"]),
-            )
-        with cc2:
-            fe_options = ["Weight/Cost Ratio", "High Discount", "Engagement Score", "Loyalty Level", "Delivery Urgency", "Care Intensity"]
-            fe_toggles = st.multiselect(
-                "Feature Engineering", fe_options,
-                default=[opt for opt in fe_options if opt in st.session_state["preprocess"]["fe_toggles"]],
-            )
+    with c3:
+        fe_options = ["Weight/Cost Ratio", "High Discount", "Engagement Score", "Loyalty Level", "Delivery Urgency", "Care Intensity"]
+        fe_toggles = st.multiselect(
+            "Feature Engineering", fe_options,
+            default=[opt for opt in fe_options if opt in st.session_state["preprocess"]["fe_toggles"]],
+        )
 
     st.session_state["preprocess"].update({
         "outlier_method": outlier_method,
@@ -485,7 +462,6 @@ def render_preprocess():
 
     st.divider()
 
-    # quality check
     with st.spinner("Updating preview..."):
         clean_params = {k: v for k, v in st.session_state["preprocess"].items() if k not in ["mode_name", "imbalance"]}
         df_clean = clean_data(df, **clean_params)
@@ -499,12 +475,11 @@ def render_preprocess():
     missing_clean = df_clean.isnull().sum().sum()
     m3.metric("Missing Cells", missing_clean, delta=-missing_orig if missing_orig > 0 else 0)
 
-    # class balance sum
     counts = df_clean[TARGET_COL].value_counts()
     delay_pct = counts.get(1, 0) / len(df_clean)
     m4.metric("Delay Rate", f"{delay_pct:.1%}")
 
-    c_bal, c_pipe = st.columns([1.5, 1], gap="large")
+    c_bal, c_pipe = st.columns([1, 1], gap="large")
     with c_bal:
         dist_df = pd.DataFrame({
             "Status": ["On Time", "Delayed"],
@@ -515,7 +490,7 @@ def render_preprocess():
 
     with c_pipe:
         if fe_toggles:
-            fe_status = "".join([f"<div style='margin-bottom:.2rem'>✅ {fe}</div>" for fe in fe_toggles])
+            fe_status = "".join([f"<div style='margin-bottom:.2rem'>• {fe}</div>" for fe in fe_toggles])
             st.markdown(f"<div style='font-size:.85rem; opacity:.8'>{fe_status}</div>", unsafe_allow_html=True)
         else:
             st.caption("No engineered features active.")
@@ -526,7 +501,6 @@ def render_preprocess():
     st.dataframe(df_clean.head(15), width="stretch")
     st.caption(f"Showing top 15 records of {len(df_clean):,} total.")
 
-# training page
 def render_model_and_eval():
     page_header("Train & Evaluate", "Fit a model, tune it, and inspect its performance")
 
@@ -574,7 +548,7 @@ def render_train_tab(df):
             cv_folds  = st.slider("Cross-validation folds", 3, 10, 5)
 
         if st.button(f"Train {model_name}", type="primary", width="stretch"):
-            with st.spinner(f"Training {model_name}…"):
+            with st.spinner(f"Training {model_name}..."):
                 metrics = train_model(
                     model_name=model_name,
                     model_params=model_params,
@@ -604,7 +578,6 @@ def render_eval_tab():
     sel = st.selectbox("Inspect model:", available, key="eval_sel")
     m = st.session_state["trained_models"][sel]
 
-    # metrics
     mc = st.columns(4)
     for col, label, key in zip(mc, ["Accuracy", "Precision", "Recall", "F1-Score"],
                                 ["accuracy", "precision", "recall", "f1_score"]):
@@ -651,7 +624,6 @@ def render_eval_tab():
         df_comp = pd.DataFrame(comp).set_index("Model")
         st.dataframe(df_comp.style.format("{:.2%}"), width="stretch")
 
-# prediction page
 def render_predict():
     page_header("Predict Risk", "Enter shipment details and receive an instant delay risk score")
 
@@ -693,7 +665,6 @@ def render_predict():
 
     st.divider()
 
-    # predict form
     with st.form("prediction_form", clear_on_submit=False):
         st.markdown('<div class="section-heading">Shipment Details</div>', unsafe_allow_html=True)
 
@@ -733,6 +704,8 @@ def render_predict():
             st.session_state["last_inputs"] = {
                 "mode": mode, "weight": weight, "warehouse": warehouse,
                 "discount": disc, "rating": rating, "calls": calls,
+                "importance": importance, "price": price,
+                "purchases": purchases, "gender": gender
             }
             st.toast("Assessment complete")
             st.rerun()
@@ -746,7 +719,6 @@ def render_predict():
                 kind="warn",
             )
 
-    # result
     if st.session_state.get("last_result"):
         res    = st.session_state["last_result"]
         inputs = st.session_state.get("last_inputs", {})
@@ -803,13 +775,29 @@ def render_predict():
             else:
                 ibox(
                     "<strong>LOW RISK — Expected On Time</strong><br>"
-                    f"Predicted delay probability: <strong>{prob:.1%}</strong>. "
-                    "No routing intervention required. Standard handling applies.",
+                    f"Predicted delay probability is only <strong>{prob:.1%}</strong>, which is well below the risk threshold. "
+                    "No manual routing intervention is required.",
                     kind="ok",
                 )
+                st.markdown("#### Favorable Factors & Next Steps")
+                low_recs = []
+                if inputs.get("mode") == "Flight":
+                    low_recs.append("**Optimal Transport:** Flight routing provides a strong buffer against unexpected delays.")
+                elif inputs.get("mode") in ["Road", "Ship"]:
+                    low_recs.append(f"**Stable Route:** Current *{inputs.get('mode')}* logistics lanes are operating with normal throughput and no severe bottlenecks.")
+                
+                if inputs.get("weight", 0) <= 3000:
+                    low_recs.append("**Efficient Weight:** The package weight allows for rapid automated conveyor sortation.")
+                
+                if inputs.get("calls", 0) < 3:
+                    low_recs.append("**Healthy Order Status:** Low customer inquiry rate indicates the fulfillment pipeline is proceeding smoothly.")
+                
+                low_recs.append("**Action:** Proceed with standard fulfillment. No priority flagging or proactive alerts are necessary.")
+                
+                for r in low_recs:
+                    st.markdown(f"- {r}")
 
         with col_gauge:
-            # gauge chart
             fig_g = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=prob * 100,
@@ -839,14 +827,48 @@ def render_predict():
             st.plotly_chart(fig_g, width="stretch")
             st.markdown(
                 f'<div style="text-align:center;font-size:.78rem;color:var(--text-muted)">'
-                f'Model: <strong>{model_name}</strong> · '
+                f'Model: <strong>{model_name}</strong> - '
                 f'Latency: <strong>{res.get("latency_ms",0):.1f} ms</strong>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
 
+        st.divider()
+        st.markdown('<div class="section-heading">Detailed Interpretation</div>', unsafe_allow_html=True)
+        st.markdown("We analyzed **every single factor** you entered. Here is exactly how each contributes to this prediction:")
 
-# nav
+        exp_c1, exp_c2 = st.columns(2)
+
+        with exp_c1:
+            m_txt = 'Fastest routing, significantly decreases delay risk.' if inputs.get('mode') == 'Flight' else 'Slower terrestrial/maritime routing, more prone to delays.'
+            w_txt = 'Heavy package, requires special handling.' if inputs.get('weight', 0) > 4000 else ('Lightweight, moves quickly through sortation.' if inputs.get('weight', 0) < 2000 else 'Standard weight, easy to consolidate.')
+            wb_txt = 'Historically high volume, prone to bottlenecks.' if inputs.get('warehouse') == 'F' else 'Stable dispatch operations.'
+            imp_txt = 'Prioritized in sorting queues.' if inputs.get('importance') == 'high' else 'Standard queue priority.'
+
+            ibox("<strong>Package & Routing</strong><br><br>"
+                 f"• <strong>Mode ({inputs.get('mode')}):</strong> {m_txt}<br>"
+                 f"• <strong>Weight ({inputs.get('weight')}g):</strong> {w_txt}<br>"
+                 f"• <strong>Warehouse ({inputs.get('warehouse')}):</strong> {wb_txt}<br>"
+                 f"• <strong>Importance ({inputs.get('importance')}):</strong> {imp_txt}<br>"
+                 f"• <strong>Cost (${inputs.get('price')}):</strong> Higher value items sometimes face stricter security checks.", kind="info")
+
+        with exp_c2:
+            d_txt = 'High discount, strongly correlates with volume spikes and fulfillment delays.' if inputs.get('discount', 0) > 10 else 'Standard pricing, normal processing.'
+            c_txt = 'High contact rate, indicates likely friction in fulfillment pipeline.' if inputs.get('calls', 0) >= 4 else 'Normal inquiry levels.'
+
+            ibox("<strong>Customer Profile</strong><br><br>"
+                 f"• <strong>Discount ({inputs.get('discount')}%):</strong> {d_txt}<br>"
+                 f"• <strong>Care Calls ({inputs.get('calls')}):</strong> {c_txt}<br>"
+                 f"• <strong>Rating ({inputs.get('rating')}/5):</strong> Reflects past satisfaction, sometimes correlated with regional logistics quality.<br>"
+                 f"• <strong>Purchases ({inputs.get('purchases')}):</strong> Loyal customers may receive priority.<br>"
+                 f"• <strong>Gender ({inputs.get('gender')}):</strong> Demographic tracking, historically negligible impact on delays.", kind="info")
+
+        if res.get("top_factors"):
+            factors_html = " ".join([f"<span style='background:var(--surface-2); padding:4px 8px; border-radius:4px; border:1px solid var(--border); margin-right:8px; font-size:0.85rem;'>{f['feature'].replace('_',' ')}: <strong>{f['importance']:.2f}</strong></span>" for f in res["top_factors"]])
+            st.markdown("<br><div style='font-size:0.95rem; color:var(--text-main); margin-bottom:0.5rem;'><strong>Model's Top Mathematical Influencers:</strong></div>", unsafe_allow_html=True)
+            st.markdown(f"<div>{factors_html}</div><br>", unsafe_allow_html=True)
+
+
 pg = st.navigation([
     st.Page(render_home,          title="Home",             default=True),
     st.Page(render_eda,           title="EDA"),
@@ -855,11 +877,9 @@ pg = st.navigation([
     st.Page(render_predict,       title="Predict Risk"),
 ])
 
-# sidebar info
 with st.sidebar:
     st.markdown('<div class="sidebar-info" style="font-weight:600; color:var(--primary); font-size:20px">BINUS University:</div>', unsafe_allow_html=True)
     for name in ["Anandhio Varistama", "Muhammad Rizki Akbar", "Jason Tirta", "Ivan Novanto Bastian", "Satya Herlambang Kurniawan"]:
         st.markdown(f'<div class="sidebar-info">{name}</div>', unsafe_allow_html=True)
 
-# run app
 pg.run()
